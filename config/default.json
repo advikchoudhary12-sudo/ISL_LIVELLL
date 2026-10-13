@@ -1,0 +1,10 @@
+{
+  "image_size": 96,
+  "seed": 42,
+  "static_batch_size": 16,
+  "static_epochs": 40,
+  "confidence_threshold": 0.75,
+  "margin_threshold": 0.15,
+  "confirmation_frames": 8,
+  "cooldown_frames": 12
+}

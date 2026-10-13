@@ -1,0 +1,12 @@
+{
+  "dataset_id": "atharvadumbre/indian-sign-language-islrtc-referred",
+  "dataset_url": "https://www.kaggle.com/datasets/atharvadumbre/indian-sign-language-islrtc-referred",
+  "dataset_version": 1,
+  "dataset_version_url": "https://www.kaggle.com/datasets/atharvadumbre/indian-sign-language-islrtc-referred/versions/1",
+  "version_updated": "2022-05-10",
+  "creator": "Atharva Dumbre",
+  "license": "CC BY-NC-SA 4.0",
+  "archive_sha256": "6b99cac015b976af3eb2a9f396473608a8e6b2d4b46ae8eaa2e2edc933c26821",
+  "archive_size_bytes": 638825517,
+  "downloaded_at_utc": "2026-10-12T08:43:47.765849+00:00"
+}

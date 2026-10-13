@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools==75.8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "isl-linux"
+version = "0.1.0"
+description = "Reproducible Indian Sign Language alphabet recognition research prototype"
+requires-python = ">=3.12,<3.13"
+
+[project.scripts]
+isl-download-static = "isl_recognition.data.download:main"
+isl-validate-static = "isl_recognition.data.validate:main"
+isl-preview-static = "isl_recognition.data.visualize:main"
+isl-prepare-static = "isl_recognition.data.prepare:main"
+isl-train-static = "isl_recognition.training.train_static:main"
+isl-evaluate-static = "isl_recognition.evaluation.evaluate_static:main"
+isl-infer-image = "isl_recognition.inference.image:main"
+isl-webcam = "isl_recognition.app.webcam:main"
+isl-smoke-test = "isl_recognition.inference.smoke_test:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"

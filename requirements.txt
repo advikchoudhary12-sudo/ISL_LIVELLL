@@ -1,0 +1,8 @@
+numpy==1.26.4
+Pillow==11.1.0
+opencv-python==4.11.0.86
+mediapipe==0.10.21
+scikit-learn==1.6.1
+matplotlib==3.10.0
+kaggle==1.6.17
+pytest==8.3.5

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Launch ISL Webcam
+Comment=Start the ISL alphabet recognition webcam app
+Exec="/home/advik/ISL_LIVE/isl-linux/launch-isl-webcam.sh"
+Terminal=true
+Categories=Education;

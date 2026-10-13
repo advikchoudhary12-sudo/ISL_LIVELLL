@@ -63,7 +63,7 @@ The dataset does not provide a verified signer/session split. Treat test accurac
 isl-webcam --camera 0
 ```
  
-You can also double-click `Launch ISL Webcam.desktop`. The app uses `artifacts/static_model.pt` and works with the trained 26-class A–Z landmark MLP. Keep the camera view empty during initial background calibration. Keys: `A` add the confirmed letter, `Space` insert a space, `Backspace` delete, `C` clear, `T` auto-type, `P` pause/resume, `F` fullscreen, `Q` quit. Auto-type starts off. The foreground-difference gate can be affected by lighting or movement; confidence is not calibrated probability.
+You can also double-click `Launch ISL Webcam.desktop`. To choose a camera in the startup menu, select **Open webcam** and enter its camera index; press Enter for index 0. From a terminal, run `./ui startup/isl-launcher.sh webcam 1` to start camera index 1, or use `ISL_CAMERA=1 ./ui startup/isl-launcher.sh webcam`. The app uses `artifacts/static_model.pt` and works with the trained 26-class A–Z landmark MLP. Keep the camera view empty during initial background calibration. Keys: `A` add the confirmed letter, `Space` insert a space, `Backspace` delete, `C` clear, `T` auto-type, `P` pause/resume, `F` fullscreen, `Q` quit. Auto-type starts off. The foreground-difference gate can be affected by lighting or movement; confidence is not calibrated probability.
 
 For a single image:
 

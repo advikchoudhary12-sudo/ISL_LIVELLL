@@ -150,7 +150,10 @@ def run(args, device: torch.device) -> None:
     def toggle_pause() -> None:
         state["paused"] = not state["paused"]
         recent.clear()
-        clip_frames.clear()
+        state["candidate"] = state["confirmed"] = None
+        state["score"] = 0.0
+        auto_typer.reset()
+        status_var.set("PAUSED" if state["paused"] else "Recognition resumed.")
 
     def toggle_fullscreen() -> None:
         state["fullscreen"] = not state["fullscreen"]

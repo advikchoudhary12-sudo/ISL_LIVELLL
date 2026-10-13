@@ -9,12 +9,13 @@ WEBCAM_LAUNCHER="$PROJECT_DIR/launch-isl-webcam.sh"
 
 show_usage() {
     cat <<'EOF'
-Usage: ./ui startup/isl-launcher.sh [train|webcam]
+Usage: ./ui startup/isl-launcher.sh [train|webcam [camera-index]]
 
   train   Extract MediaPipe landmarks and train the static A-Z model (25 epochs, batch size 32)
-  webcam  Launch the webcam app with the trained model
+  webcam  Launch the webcam app (default camera index: 0)
   (none)  Show an interactive menu
 
+Pass a camera index after "webcam" or choose one in the interactive menu.
 Training can be configured with ISL_EPOCHS and ISL_BATCH_SIZE.
 EOF
 }
@@ -43,7 +44,12 @@ launch_webcam() {
         echo "Webcam launcher not found: $WEBCAM_LAUNCHER" >&2
         exit 1
     fi
-    exec "$WEBCAM_LAUNCHER"
+    local camera_index="${1:-${ISL_CAMERA:-0}}"
+    if [[ ! "$camera_index" =~ ^[0-9]+$ ]]; then
+        echo "Camera index must be a non-negative integer." >&2
+        exit 2
+    fi
+    exec "$WEBCAM_LAUNCHER" "$camera_index"
 }
 
 case "${1:-menu}" in
@@ -51,7 +57,7 @@ case "${1:-menu}" in
         train_model
         ;;
     webcam)
-        launch_webcam
+        launch_webcam "${2:-${ISL_CAMERA:-0}}"
         ;;
     -h|--help|help)
         show_usage
@@ -63,7 +69,10 @@ case "${1:-menu}" in
         read -r -p "Choose 1 or 2: " choice
         case "$choice" in
             1) train_model ;;
-            2) launch_webcam ;;
+            2)
+                read -r -p "Camera index (0 is usually the default; press Enter to use 0): " camera_index
+                launch_webcam "${camera_index:-0}"
+                ;;
             *) echo "Choose 1 or 2. Run "ui startup/isl-launcher.sh" to try again." >&2; exit 2 ;;
         esac
         ;;

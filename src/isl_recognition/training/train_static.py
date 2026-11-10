@@ -13,7 +13,7 @@ from isl_recognition.training.common import run_training, set_seed
 
 def main() -> None:
     defaults = load_config()
-    parser = argparse.ArgumentParser(description="Extract MediaPipe hand landmarks and train the 26-class static landmark model.")
+    parser = argparse.ArgumentParser(description="Extract MediaPipe hand landmarks and train the 36-class static landmark model (A-Z and 0-9).")
     parser.add_argument("--dataset", type=Path, default=STATIC_DATA_ROOT)
     parser.add_argument("--manifest", type=Path, default=PROJECT_ROOT / "data/manifests/static_splits.json")
     parser.add_argument("--output", type=Path, default=ARTIFACT_ROOT)
@@ -30,7 +30,7 @@ def main() -> None:
     validation_data = StaticLandmarkDataset(manifest, "validation", dataset_root, STATIC_LABELS)
     print(f"Train landmarks: {len(train_data):,} kept, {train_data.dropped:,} images without detected hands")
     print(f"Validation landmarks: {len(validation_data):,} kept, {validation_data.dropped:,} images without detected hands")
-    print("Detected train examples per letter: " + ", ".join(
+    print("Detected train examples per class: " + ", ".join(
         f"{label}={train_data.detected_counts[label]}" for label in STATIC_LABELS
     ))
     split_metadata = json.loads(manifest.read_text(encoding="utf-8"))

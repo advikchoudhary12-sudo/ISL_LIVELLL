@@ -53,7 +53,7 @@ def run(args, device: torch.device) -> None:
     title = tk.Frame(root, bg="#0f3460", padx=20, pady=13)
     title.grid(row=0, column=0, sticky="ew")
     ttk.Label(title, text="ISL SIGN RECOGNITION", style="Title.TLabel").pack(anchor="w")
-    ttk.Label(title, text="Live alphabet fingerspelling", style="Subtitle.TLabel").pack(
+    ttk.Label(title, text="Live fingerspelling and number recognition", style="Subtitle.TLabel").pack(
         anchor="w", pady=(2, 0))
 
     body = tk.Frame(root, bg=palette["bg"], padx=14, pady=14)
@@ -82,7 +82,7 @@ def run(args, device: torch.device) -> None:
     ttk.Label(sidebar, textvariable=sign_var, style="Sign.TLabel", anchor="center").grid(
                  row=1, column=0, sticky="ew")
     status_var = tk.StringVar(value="Keep camera view empty for background calibration.")
-    mode_var = tk.StringVar(value="STATIC A–Z  |  Calibrating")
+    mode_var = tk.StringVar(value="STATIC A–Z · 0–9  |  Calibrating")
     ttk.Label(sidebar, textvariable=mode_var, style="Muted.TLabel",
              font=("DejaVu Sans", 9), wraplength=300, justify="center").grid(
                  row=2, column=0, sticky="ew", pady=(0, 8))
@@ -122,9 +122,10 @@ def run(args, device: torch.device) -> None:
     state = {"paused": False, "auto": False,
              "candidate": None, "confirmed": None, "score": 0.0,
              "frame_number": 0, "last_appended": -10**9,
-             "fullscreen": False}
+             "stable_hand_count": None, "fullscreen": False}
     text = TextBuffer()
     recent = deque(maxlen=args.confirmation_frames)
+    hand_count_history = deque(maxlen=5)
     auto_typer = _DwellAutoTyper()
 
     def update_text() -> None:
@@ -138,7 +139,7 @@ def run(args, device: torch.device) -> None:
         if state["frame_number"] - state["last_appended"] < args.cooldown_frames:
             status_var.set("Letter append ignored during cooldown.")
             return
-        text.append_letter(letter)
+        text.append_character(letter)
         state["last_appended"] = state["frame_number"]
         update_text()
 
@@ -163,12 +164,12 @@ def run(args, device: torch.device) -> None:
     button_grid.grid(row=10, column=0, sticky="ew")
     button_grid.columnconfigure((0, 1), weight=1)
     controls = [
-        ("✓  ADD LETTER", add_letter, 0, 0, "#1b5e20"),
+        ("✓  ADD CHARACTER", add_letter, 0, 0, "#1b5e20"),
         ("SPACE", lambda: (text.append_space(), update_text()), 0, 1, "#0f3460"),
         ("⌫  BACKSPACE", lambda: (text.backspace(), update_text()), 1, 0, "#0f3460"),
         ("✕  CLEAR", lambda: (text.clear(), update_text()), 1, 1, "#0f3460"),
         ("T  AUTO-TYPE", toggle_auto, 2, 0, "#1b5e20"),
-        ("A–Z ONLY", None, 2, 1, "#0f3460"),
+        ("A–Z · 0–9", None, 2, 1, "#0f3460"),
         ("P  PAUSE / RESUME", toggle_pause, 3, 0, "#0f3460"),
         ("F  FULLSCREEN", toggle_fullscreen, 3, 1, "#0f3460"),
     ]
@@ -215,6 +216,12 @@ def run(args, device: torch.device) -> None:
     )
     if static_checkpoint.get("architecture") != "static_landmark_mlp":
         raise ValueError("The model is not a MediaPipe landmark model. Retrain with isl-train-static.")
+    from isl_recognition.labels import STATIC_LABELS
+    checkpoint_labels = tuple(static_checkpoint.get("labels", ()))
+    mode_prefix = ("STATIC A–Z · 0–9" if checkpoint_labels == STATIC_LABELS else
+                   f"RETRAIN MODEL · {len(checkpoint_labels)}/36 classes")
+    if checkpoint_labels != STATIC_LABELS:
+        status_var.set("This checkpoint has no digit classes. Run isl-prepare-static, then isl-train-static.")
 
     hands_module = mp.solutions.hands
     tracker = hands_module.Hands(static_image_mode=False, max_num_hands=2,
@@ -230,7 +237,7 @@ def run(args, device: torch.device) -> None:
             return
         if not camera_available:
             status_var.set(f"Camera {args.camera} unavailable; connect a camera and restart.")
-            mode_var.set("STATIC A–Z  |  Camera unavailable")
+            mode_var.set(f"{mode_prefix}  |  Camera unavailable")
             sign_var.set("—")
             height, width = 480, 640
             blank = np.zeros((height, width, 3), dtype=np.uint8)
@@ -267,6 +274,11 @@ def run(args, device: torch.device) -> None:
             results = tracker.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             hands = results.multi_hand_landmarks or []
             hand_count = len(hands)
+            hand_count_history.append(hand_count)
+            stable_hand_count = Counter(hand_count_history).most_common(1)[0][0]
+            if stable_hand_count != state["stable_hand_count"]:
+                recent.clear()
+                state["stable_hand_count"] = stable_hand_count
             landmark_features = landmarks_to_features(hands, frame.shape)
             foreground = landmark_features is not None and gate.has_foreground(
                 frame, args.foreground_min, args.foreground_max
@@ -277,6 +289,16 @@ def run(args, device: torch.device) -> None:
                 candidate, _, score = _prediction(static_model, model_input,
                     static_checkpoint, device, args.confidence, args.margin,
                     hand_count=hand_count)
+                # UI-only rule: with one stable hand, show X as I. The short
+                # hand-count vote filters brief detector blips; rewrite old votes
+                # too so a prior X frame cannot flash or confirm as X.
+                if stable_hand_count == 1:
+                    if candidate == "X":
+                        candidate = "I"
+                    if "X" in recent:
+                        previous_votes = list(recent)
+                        recent.clear()
+                        recent.extend("I" if vote == "X" else vote for vote in previous_votes)
                 state["candidate"], state["score"] = candidate, score
                 recent.append(candidate)
             elif not foreground or state["paused"]:
@@ -289,10 +311,11 @@ def run(args, device: torch.device) -> None:
                 if count >= max(2, int(np.ceil(args.confirmation_frames * 0.75))):
                     confirmed = label
             state["confirmed"] = confirmed
+            buffered_candidate = votes.most_common(1)[0][0] if votes else None
             if state["auto"]:
                 letter = auto_typer.update(confirmed, foreground and not state["paused"], now)
                 if letter:
-                    text_buffer.append_letter(letter)
+                    text_buffer.append_character(letter)
                     update_text()
             if state["paused"]:
                 display_state = "PAUSED"
@@ -306,22 +329,25 @@ def run(args, device: torch.device) -> None:
                 display_state = "Uncertain"
             hands_var.set(f"Hands detected: {hand_count}")
             status_var.set(display_state)
-            sign_var.set(state["candidate"] or "…")
-            mode_var.set(f"STATIC A–Z  |  {display_state}")
+            sign_var.set(buffered_candidate or "…")
+            mode_var.set(f"{mode_prefix}  |  {display_state}")
             confidence_var.set(f"Confidence  {state['score']:.0%}")
             progress_var.set(100 if confirmed else (min(100, len(recent) * 100 /
                                 max(1, args.confirmation_frames))))
         if results is not None:
             _draw_hand_grid(frame, results, hands_module)
         display_frame = cv2.flip(frame, 1)
-        max_width = max(320, camera_label.winfo_width())
-        max_height = max(240, camera_label.winfo_height())
+        max_width = max(1, camera_label.winfo_width())
+        max_height = max(1, camera_label.winfo_height())
         frame_height, frame_width = display_frame.shape[:2]
-        scale = min(max_width / frame_width, max_height / frame_height, 1.0)
-        if scale < 1:
+        scale = min(max_width / frame_width, max_height / frame_height)
+        if abs(scale - 1.0) > 1e-3:
+            interpolation = cv2.INTER_AREA if scale < 1.0 else cv2.INTER_LINEAR
             display_frame = cv2.resize(
-                display_frame, (round(frame_width * scale), round(frame_height * scale)),
-                interpolation=cv2.INTER_AREA)
+                display_frame,
+                (max(1, round(frame_width * scale)), max(1, round(frame_height * scale))),
+                interpolation=interpolation,
+            )
         encoded, png = cv2.imencode(".png", display_frame)
         if not encoded:
             raise RuntimeError("Could not encode the camera frame")

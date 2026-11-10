@@ -72,7 +72,7 @@ def main() -> None:
     args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     for label in SOURCE_LABELS:
         print(f"{label}: {report['class_counts'].get(label, 0)}")
-    print(f"Static alphabet classes: {', '.join(STATIC_LABELS)}")
+    print(f"Static model classes: {', '.join(STATIC_LABELS)}")
     print(f"Valid source images: {report['total_valid_source_images']}")
     print(f"Same-class exact duplicate images: {report['exact_duplicate_count']}")
     print(f"Malformed/conflicting images: {len(report['invalid_or_conflicting_samples'])}")

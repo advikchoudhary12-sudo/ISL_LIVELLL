@@ -10,6 +10,12 @@ class TextBuffer:
         normalized = letter.upper()
         if len(normalized) != 1 or normalized not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
             raise ValueError("letter must be one English alphabet character")
+        self.append_character(normalized)
+
+    def append_character(self, character: str) -> None:
+        normalized = character.upper()
+        if len(normalized) != 1 or normalized not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789":
+            raise ValueError("character must be one English letter or digit")
         self._text += normalized
 
     def append_space(self) -> None:
@@ -21,4 +27,3 @@ class TextBuffer:
 
     def clear(self) -> None:
         self._text = ""
-

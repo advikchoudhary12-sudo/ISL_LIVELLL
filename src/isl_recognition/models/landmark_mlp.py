@@ -7,7 +7,7 @@ from torch import nn
 class LandmarkSignMLP(nn.Module):
     architecture_name = "static_landmark_mlp"
 
-    def __init__(self, num_classes: int = 26, input_features: int = 134) -> None:
+    def __init__(self, num_classes: int = 36, input_features: int = 134) -> None:
         super().__init__()
         self.input_features = input_features
         self.network = nn.Sequential(

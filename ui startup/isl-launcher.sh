@@ -11,7 +11,7 @@ show_usage() {
     cat <<'EOF'
 Usage: ./ui startup/isl-launcher.sh [train|webcam [camera-index]]
 
-  train   Extract MediaPipe landmarks and train the static A-Z model (25 epochs, batch size 32)
+  train   Extract MediaPipe landmarks and train the static A-Z/0-9 model (25 epochs, batch size 32)
   webcam  Launch the webcam app (default camera index: 0)
   (none)  Show an interactive menu
 
@@ -35,7 +35,7 @@ train_model() {
     fi
     local epochs="${ISL_EPOCHS:-25}"
     local batch_size="${ISL_BATCH_SIZE:-32}"
-    echo "Extracting MediaPipe landmarks and training the static A-Z model (up to $epochs epochs, batch size $batch_size)."
+    echo "Extracting MediaPipe landmarks and training the static A-Z/0-9 model (up to $epochs epochs, batch size $batch_size)."
     exec "$TRAIN_CMD" --epochs "$epochs" --batch-size "$batch_size"
 }
 
